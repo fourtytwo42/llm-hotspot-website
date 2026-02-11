@@ -1,36 +1,73 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# LLM Hotspot Website
 
-## Getting Started
+Landing page + sales site for LLM Hotspot with:
+- Free vs Pro pricing
+- PayPal subscription checkout (`$5/month`)
+- Coinbase Commerce crypto checkout (`$5` monthly renewal flow)
+- Webhook-driven license key issuance
+- License activation API for the desktop app
 
-First, run the development server:
+## Stack
+- Next.js App Router
+- Plain CSS modules
+- Server route handlers for payments/webhooks
+- File-backed JSON store at `data/store.json`
+
+## Local setup
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Environment variables
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+Create `.env.local`:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+APP_BASE_URL=http://localhost:3000
+PAYMENT_DEV_MODE=true
 
-## Learn More
+# PayPal
+PAYPAL_ENV=sandbox
+PAYPAL_CLIENT_ID=...
+PAYPAL_CLIENT_SECRET=...
+PAYPAL_PLAN_ID=...
+PAYPAL_WEBHOOK_ID=...
 
-To learn more about Next.js, take a look at the following resources:
+# Coinbase Commerce
+COINBASE_COMMERCE_API_KEY=...
+COINBASE_WEBHOOK_SHARED_SECRET=...
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+`PAYMENT_DEV_MODE=true` disables webhook signature verification for local testing only.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Routes
 
-## Deploy on Vercel
+### Customer routes
+- `/` landing page + checkout CTA
+- `/download` app download/activation info
+- `/success?provider=<paypal|coinbase>&ref=<orderRef>` post-checkout key delivery view
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### API routes
+- `POST /api/checkout/paypal`
+- `POST /api/checkout/coinbase`
+- `POST /api/webhooks/paypal`
+- `POST /api/webhooks/coinbase`
+- `GET /api/order-status/:orderRef`
+- `POST /api/license/activate`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### License activation payload
+
+```json
+{
+  "licenseKey": "LLMH-XXXX-XXXX-XXXX-XXXX",
+  "deviceId": "machine-uuid"
+}
+```
+
+## Production notes
+- Replace file storage with a real DB before scale.
+- Add email delivery for keys (SES/Postmark/Resend).
+- Keep webhook endpoints behind HTTPS only.
+- For strict recurring crypto billing, integrate a provider that supports native subscription billing for crypto.

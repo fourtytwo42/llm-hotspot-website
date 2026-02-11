@@ -1,0 +1,75 @@
+.page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: linear-gradient(180deg, #f8fafc 0%, #eef6f2 100%);
+}
+
+.card {
+  width: min(760px, 100%);
+  background: #fff;
+  border: 1px solid #dbe4e0;
+  border-radius: 18px;
+  padding: 1.2rem;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
+}
+
+.eyebrow {
+  color: #0f766e;
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+}
+
+.card h1 {
+  font-size: clamp(1.4rem, 3.6vw, 2.1rem);
+  margin-bottom: 0.5rem;
+}
+
+.card p {
+  color: #334155;
+  line-height: 1.6;
+}
+
+.actions {
+  display: grid;
+  gap: 0.55rem;
+  margin: 1rem 0;
+}
+
+.button {
+  min-height: 42px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0f172a;
+  background: #f8fafc;
+}
+
+.apiBox {
+  border: 1px solid #dbe4e0;
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 0.8rem;
+}
+
+.apiBox h2 {
+  font-size: 0.95rem;
+  margin-bottom: 0.5rem;
+}
+
+.apiBox pre {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.82rem;
+  overflow: auto;
+}
+
+.link {
+  margin-top: 0.9rem;
+  display: inline-block;
+  color: #0f766e;
+  font-weight: 600;
+}
