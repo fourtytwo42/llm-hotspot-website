@@ -49,24 +49,6 @@
   background: #f8fafc;
 }
 
-.apiBox {
-  border: 1px solid #dbe4e0;
-  background: #f8fafc;
-  border-radius: 12px;
-  padding: 0.8rem;
-}
-
-.apiBox h2 {
-  font-size: 0.95rem;
-  margin-bottom: 0.5rem;
-}
-
-.apiBox pre {
-  font-family: var(--font-geist-mono), monospace;
-  font-size: 0.82rem;
-  overflow: auto;
-}
-
 .link {
   margin-top: 0.9rem;
   display: inline-block;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import styles from "./page.module.css";
 
@@ -21,16 +21,71 @@ const featureRows = [
     pro: "Yes",
   },
   {
-    label: "Webhook-based license key delivery",
-    free: "N/A",
-    pro: "Included",
+    label: "Account prioritization + routing",
+    free: "No",
+    pro: "Yes",
+  },
+  {
+    label: "Usage visibility across linked accounts",
+    free: "Basic",
+    pro: "Advanced",
   },
 ];
+
+const useCases = [
+  "Connect desktop tools that already support the OpenAI API format.",
+  "Reduce API spending by leveraging your ChatGPT subscription workflow.",
+  "Route requests across multiple connected OpenAI accounts in Pro.",
+  "Set priority order so critical workloads hit preferred accounts first.",
+];
+
+const CHAT_STORAGE_KEY = "llmhotspot:chat_state_v1";
 
 export default function Home() {
   const [email, setEmail] = useState("");
   const [checkoutBusy, setCheckoutBusy] = useState("");
   const [error, setError] = useState("");
+
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatName, setChatName] = useState("");
+  const [chatEmail, setChatEmail] = useState("");
+  const [chatStarted, setChatStarted] = useState(false);
+  const [chatDraft, setChatDraft] = useState("");
+  const [chatMessages, setChatMessages] = useState([]);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(CHAT_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      setChatOpen(Boolean(parsed.chatOpen));
+      setChatName(parsed.chatName || "");
+      setChatEmail(parsed.chatEmail || "");
+      setChatStarted(Boolean(parsed.chatStarted));
+      setChatDraft(parsed.chatDraft || "");
+      setChatMessages(Array.isArray(parsed.chatMessages) ? parsed.chatMessages : []);
+    } catch {
+      // Ignore local storage parse errors.
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        CHAT_STORAGE_KEY,
+        JSON.stringify({
+          chatOpen,
+          chatName,
+          chatEmail,
+          chatStarted,
+          chatDraft,
+          chatMessages,
+        }),
+      );
+    } catch {
+      // Ignore local storage write errors.
+    }
+  }, [chatOpen, chatName, chatEmail, chatStarted, chatDraft, chatMessages]);
 
   async function beginCheckout(provider) {
     setError("");
@@ -57,6 +112,38 @@ export default function Home() {
     }
   }
 
+  function startChat(event) {
+    event.preventDefault();
+    if (!chatName.trim() || !chatEmail.trim()) return;
+
+    setChatStarted(true);
+    if (chatMessages.length === 0) {
+      setChatMessages([
+        {
+          id: `system-${Date.now()}`,
+          role: "system",
+          text: `Thanks ${chatName.trim()}. Someone will be with you shortly.`,
+        },
+      ]);
+    }
+  }
+
+  function sendMessage(event) {
+    event.preventDefault();
+    const text = chatDraft.trim();
+    if (!text) return;
+
+    setChatMessages((prev) => [
+      ...prev,
+      {
+        id: `user-${Date.now()}`,
+        role: "user",
+        text,
+      },
+    ]);
+    setChatDraft("");
+  }
+
   return (
     <div className={styles.page}>
       <header className={styles.header}>
@@ -64,6 +151,7 @@ export default function Home() {
         <nav className={styles.nav}>
           <a href="#pricing">Pricing</a>
           <a href="#features">Features</a>
+          <a href="#how-it-works">How It Works</a>
           <Link href="/download">Download</Link>
         </nav>
       </header>
@@ -71,10 +159,11 @@ export default function Home() {
       <main>
         <section className={styles.hero}>
           <p className={styles.eyebrow}>OpenAI-compatible gateway for your apps</p>
-          <h1>Run your own LLM Hotspot endpoint in minutes.</h1>
+          <h1>Turn your ChatGPT login into a practical app-ready LLM endpoint.</h1>
           <p className={styles.subhead}>
-            Connect once, expose a clean OpenAI-style API endpoint, and plug into apps that
-            already support the OpenAI API standard.
+            LLM Hotspot gives you a local OpenAI-style endpoint so apps can connect without custom
+            adapters. Free covers one account. Pro unlocks multi-account pooling, prioritization,
+            usage visibility, and Cloudflare Tunnel support.
           </p>
           <div className={styles.heroActions}>
             <a href="#pricing" className={styles.primaryCta}>
@@ -84,6 +173,18 @@ export default function Home() {
               Download Desktop App
             </Link>
           </div>
+          <p className={styles.termsNote}>
+            Use is subject to OpenAI and app provider terms.
+          </p>
+        </section>
+
+        <section className={styles.useCaseBand}>
+          <h2>What you can do with LLM Hotspot</h2>
+          <ul>
+            {useCases.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
         </section>
 
         <section id="features" className={styles.featureBand}>
@@ -91,15 +192,26 @@ export default function Home() {
             <h2>Built for practical local-to-cloud workflows</h2>
             <p>
               Free mode gives a single account connection. Pro unlocks unlimited account
-              connections plus Cloudflare Tunnel support for a stable public HTTPS endpoint.
+              connections plus Cloudflare Tunnel support for a stable public HTTPS endpoint and
+              better cross-app integrations.
             </p>
           </div>
           <ul>
             <li>One-click account linking</li>
             <li>OpenAI API-compatible endpoint shape</li>
-            <li>Webhook-issued license keys</li>
-            <li>Activation endpoint for desktop unlock</li>
+            <li>Multi-account priority routing in Pro</li>
+            <li>Usage-aware operations for connected accounts</li>
           </ul>
+        </section>
+
+        <section id="how-it-works" className={styles.howItWorks}>
+          <h2>How it works</h2>
+          <ol>
+            <li>Install LLM Hotspot on your machine.</li>
+            <li>Connect one or more OpenAI accounts.</li>
+            <li>Activate your Pro license key (if needed).</li>
+            <li>Point OpenAI-compatible apps at your LLM Hotspot endpoint.</li>
+          </ol>
         </section>
 
         <section id="pricing" className={styles.pricingSection}>
@@ -126,13 +238,14 @@ export default function Home() {
               <p className={styles.caption}>per month</p>
               <ul>
                 <li>Unlimited OpenAI account connections</li>
+                <li>Account priority + routing controls</li>
                 <li>Cloudflare Tunnel support</li>
                 <li>HTTPS internet-facing endpoint</li>
-                <li>Priority key issuance via webhooks</li>
+                <li>Recurring monthly billing</li>
               </ul>
 
               <label className={styles.emailLabel}>
-                Buyer email (for support/recovery)
+                Buyer email (required for license delivery)
                 <input
                   type="email"
                   value={email}
@@ -160,7 +273,8 @@ export default function Home() {
                 </button>
               </div>
               <p className={styles.smallPrint}>
-                PayPal is automatic recurring billing. Coinbase Commerce checkout is paid monthly.
+                PayPal supports automatic recurring billing. Coinbase Commerce flow is monthly
+                renewal checkout.
               </p>
               {error ? <p className={styles.error}>{error}</p> : null}
             </article>
@@ -197,6 +311,98 @@ export default function Home() {
           <a href="mailto:support@llmhotspot.app">support@llmhotspot.app</a>
         </div>
       </footer>
+
+      <div className={styles.chatWidget}>
+        {chatOpen ? (
+          <section className={styles.chatWidgetPanel}>
+            <header className={styles.chatWidgetHeader}>
+              <div className={styles.chatWidgetAgent}>
+                <span className={styles.chatWidgetAvatar} aria-hidden="true">
+                  🤖
+                </span>
+                <div>
+                  <p>LLM Hotspot Assistant</p>
+                  <small>Sales chat</small>
+                </div>
+              </div>
+              <button
+                type="button"
+                className={styles.chatWidgetClose}
+                onClick={() => setChatOpen(false)}
+              >
+                ✕
+              </button>
+            </header>
+
+            {!chatStarted ? (
+              <form className={styles.chatCard} onSubmit={startChat}>
+                <label>
+                  Name
+                  <input
+                    type="text"
+                    value={chatName}
+                    onChange={(event) => setChatName(event.target.value)}
+                    placeholder="Your name"
+                    required
+                  />
+                </label>
+                <label>
+                  Email
+                  <input
+                    type="email"
+                    value={chatEmail}
+                    onChange={(event) => setChatEmail(event.target.value)}
+                    placeholder="you@example.com"
+                    required
+                  />
+                </label>
+                <button className={styles.cardButton} type="submit">
+                  Start Chat
+                </button>
+              </form>
+            ) : (
+              <div className={styles.chatCard}>
+                <div className={styles.chatTranscript}>
+                  {chatMessages.map((message) => (
+                    <div
+                      key={message.id}
+                      className={`${styles.chatBubble} ${
+                        message.role === "user" ? styles.chatBubbleUser : styles.chatBubbleSystem
+                      }`}
+                    >
+                      {message.text}
+                    </div>
+                  ))}
+                </div>
+
+                <form onSubmit={sendMessage} className={styles.chatComposer}>
+                  <input
+                    type="text"
+                    value={chatDraft}
+                    onChange={(event) => setChatDraft(event.target.value)}
+                    placeholder="Type your message..."
+                  />
+                  <button className={styles.cardButton} type="submit">
+                    Send
+                  </button>
+                </form>
+              </div>
+            )}
+          </section>
+        ) : (
+          <button
+            type="button"
+            className={styles.chatWidgetBubble}
+            onClick={() => setChatOpen(true)}
+            aria-label="Open chat assistant"
+            title="Open chat assistant"
+          >
+            <span className={styles.chatWidgetAvatar} aria-hidden="true">
+              🤖
+            </span>
+          </button>
+        )}
+      </div>
     </div>
   );
 }

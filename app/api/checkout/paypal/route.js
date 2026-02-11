@@ -18,6 +18,7 @@ export async function POST(request) {
       );
     }
 
+    const now = new Date().toISOString();
     const order = {
       orderRef,
       provider: "paypal",
@@ -27,9 +28,11 @@ export async function POST(request) {
       email: email || null,
       amountUsd: 5,
       recurring: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: now,
+      updatedAt: now,
       raw: null,
+      licenseKeyIssued: false,
+      paidAt: null,
     };
 
     await createOrder(order);

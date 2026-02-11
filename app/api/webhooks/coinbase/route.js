@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { verifyCoinbaseWebhookSignature } from "@/lib/coinbase";
 import { paymentDevMode, planCatalog } from "@/lib/config";
+import { sendPurchaseEmail } from "@/lib/email";
 import { issueOrRenewLicense, updateOrder } from "@/lib/store";
 
 export async function POST(request) {
@@ -31,27 +32,67 @@ export async function POST(request) {
       type === "charge:delayed";
 
     if (paidEvent && orderRef) {
-      await updateOrder(orderRef, (order) => ({
+      const updatedOrder = await updateOrder(orderRef, (order) => ({
         ...order,
         status: "paid",
         providerRef: providerRef || order.providerRef,
         email: email || order.email,
         updatedAt: new Date().toISOString(),
+        paidAt: new Date().toISOString(),
         raw: payload,
       }));
 
-      await issueOrRenewLicense({
+      const buyerEmail = email || updatedOrder?.email || null;
+      if (!buyerEmail) {
+        await updateOrder(orderRef, (order) => ({
+          ...order,
+          status: "paid_email_missing",
+          updatedAt: new Date().toISOString(),
+        }));
+        return NextResponse.json({ ok: true, type, orderRef, warning: "missing_email" });
+      }
+
+      const licenseResult = await issueOrRenewLicense({
         orderRef,
-        email,
+        email: buyerEmail,
         provider: "coinbase",
         providerRef,
         planId: "pro",
         renewalWindowMs: planCatalog.pro.renewalWindowMs,
       });
+
+      if (!licenseResult.ok) {
+        await updateOrder(orderRef, (order) => ({
+          ...order,
+          status: "license_issue_failed",
+          updatedAt: new Date().toISOString(),
+        }));
+
+        return NextResponse.json(
+          { ok: false, error: licenseResult.error || "license_issue_failed" },
+          { status: 400 },
+        );
+      }
+
+      await updateOrder(orderRef, (order) => ({
+        ...order,
+        licenseKeyIssued: true,
+        updatedAt: new Date().toISOString(),
+      }));
+
+      await sendPurchaseEmail({
+        email: buyerEmail,
+        licenseKey: licenseResult.license.licenseKey,
+        expiresAt: licenseResult.license.expiresAt,
+        provider: "coinbase",
+      });
     }
 
     return NextResponse.json({ ok: true, type, orderRef });
   } catch (error) {
-    return NextResponse.json({ error: error.message || "Webhook processing failed" }, { status: 500 });
+    return NextResponse.json(
+      { error: error.message || "Webhook processing failed" },
+      { status: 500 },
+    );
   }
 }

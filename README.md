@@ -5,12 +5,15 @@ Landing page + sales site for LLM Hotspot with:
 - PayPal subscription checkout (`$5/month`)
 - Coinbase Commerce crypto checkout (`$5` monthly renewal flow)
 - Webhook-driven license key issuance
-- License activation API for the desktop app
+- Strict one-device activation claim lock
+- Daily license status API for app heartbeat checks
+- SMTP email notifications (purchase, due soon, expired)
+- Daily reminder cron endpoint for GitHub Actions
 
 ## Stack
 - Next.js App Router
 - Plain CSS modules
-- Server route handlers for payments/webhooks
+- Server route handlers for payments/webhooks/licensing
 - File-backed JSON store at `data/store.json`
 
 ## Local setup
@@ -38,6 +41,18 @@ PAYPAL_WEBHOOK_ID=...
 # Coinbase Commerce
 COINBASE_COMMERCE_API_KEY=...
 COINBASE_WEBHOOK_SHARED_SECRET=...
+
+# SMTP
+SMTP_HOST=...
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=...
+SMTP_PASS=...
+SMTP_FROM="LLM Hotspot <noreply@example.com>"
+
+# Cron auth
+CRON_SECRET=...
+ADMIN_API_KEY=...
 ```
 
 `PAYMENT_DEV_MODE=true` disables webhook signature verification for local testing only.
@@ -46,7 +61,7 @@ COINBASE_WEBHOOK_SHARED_SECRET=...
 
 ### Customer routes
 - `/` landing page + checkout CTA
-- `/download` app download/activation info
+- `/download` app download information
 - `/success?provider=<paypal|coinbase>&ref=<orderRef>` post-checkout key delivery view
 
 ### API routes
@@ -56,8 +71,11 @@ COINBASE_WEBHOOK_SHARED_SECRET=...
 - `POST /api/webhooks/coinbase`
 - `GET /api/order-status/:orderRef`
 - `POST /api/license/activate`
+- `POST /api/license/status`
+- `POST /api/jobs/license-reminders` (requires `CRON_SECRET`)
+- `GET /api/admin/debug/licenses` (requires `ADMIN_API_KEY` or fallback `CRON_SECRET`)
 
-### License activation payload
+### Activation payload
 
 ```json
 {
@@ -66,8 +84,35 @@ COINBASE_WEBHOOK_SHARED_SECRET=...
 }
 ```
 
+### Status payload
+
+```json
+{
+  "licenseKey": "LLMH-XXXX-XXXX-XXXX-XXXX",
+  "deviceId": "machine-uuid"
+}
+```
+
+## Reminder workflow
+
+A GitHub Actions workflow is included at `.github/workflows/license-reminders.yml`.
+Set repository secrets:
+- `APP_BASE_URL`
+- `CRON_SECRET`
+
+The workflow triggers `POST /api/jobs/license-reminders` daily.
+
+## Admin debug endpoint
+
+Use this for operational visibility into license/order/notification state.
+
+```bash
+curl -sS \"${APP_BASE_URL}/api/admin/debug/licenses?limit=50&includeOrders=true\" \\
+  -H \"Authorization: Bearer ${ADMIN_API_KEY}\"
+```
+
 ## Production notes
 - Replace file storage with a real DB before scale.
-- Add email delivery for keys (SES/Postmark/Resend).
-- Keep webhook endpoints behind HTTPS only.
+- Keep webhook and cron endpoints behind HTTPS.
 - For strict recurring crypto billing, integrate a provider that supports native subscription billing for crypto.
+- Use is subject to OpenAI and app provider terms.

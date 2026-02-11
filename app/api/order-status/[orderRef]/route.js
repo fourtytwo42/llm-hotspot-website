@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { findLicenseByOrder, findOrderByRef } from "@/lib/store";
+import { findLicenseByOrder, findOrderByRef, summarizeLicenseForOrder } from "@/lib/store";
 
 export async function GET(_request, { params }) {
   const { orderRef } = await params;
@@ -20,13 +20,9 @@ export async function GET(_request, { params }) {
       status: order.status,
       planId: order.planId,
       recurring: order.recurring,
+      paidAt: order.paidAt,
+      licenseKeyIssued: order.licenseKeyIssued,
     },
-    license: license
-      ? {
-          key: license.licenseKey,
-          tier: license.tier,
-          expiresAt: license.expiresAt,
-        }
-      : null,
+    license: summarizeLicenseForOrder(license),
   });
 }

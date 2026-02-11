@@ -24,11 +24,6 @@ export default function DownloadPage() {
           </a>
         </div>
 
-        <div className={styles.apiBox}>
-          <h2>License activation endpoint for app unlock</h2>
-          <pre>{`POST /api/license/activate\n{\n  "licenseKey": "LLMH-XXXX-XXXX-XXXX-XXXX",\n  "deviceId": "machine-uuid"\n}`}</pre>
-        </div>
-
         <Link href="/" className={styles.link}>
           Back to pricing
         </Link>
