@@ -1,0 +1,4 @@
+[submodule "external/llm-hotspot"]
+	path = external/llm-hotspot
+	url = https://github.com/fourtytwo42/llm-hotspot
+	branch = main

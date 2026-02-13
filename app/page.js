@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import styles from "./page.module.css";
 
 const featureRows = [
@@ -147,7 +148,10 @@ export default function Home() {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <div className={styles.logo}>LLM Hotspot</div>
+        <div className={styles.logo}>
+          <Image src="/logo.png" alt="LLM Hotspot logo" width={32} height={32} className={styles.logoImage} />
+          <span>LLM Hotspot</span>
+        </div>
         <nav className={styles.nav}>
           <a href="#pricing">Pricing</a>
           <a href="#features">Features</a>
@@ -317,9 +321,13 @@ export default function Home() {
           <section className={styles.chatWidgetPanel}>
             <header className={styles.chatWidgetHeader}>
               <div className={styles.chatWidgetAgent}>
-                <span className={styles.chatWidgetAvatar} aria-hidden="true">
-                  🤖
-                </span>
+                <Image
+                  src="/logo.png"
+                  alt="LLM Hotspot assistant"
+                  width={40}
+                  height={40}
+                  className={styles.chatWidgetAvatar}
+                />
                 <div>
                   <p>LLM Hotspot Assistant</p>
                   <small>Sales chat</small>
@@ -397,9 +405,13 @@ export default function Home() {
             aria-label="Open chat assistant"
             title="Open chat assistant"
           >
-            <span className={styles.chatWidgetAvatar} aria-hidden="true">
-              🤖
-            </span>
+            <Image
+              src="/logo.png"
+              alt="LLM Hotspot assistant"
+              width={40}
+              height={40}
+              className={styles.chatWidgetAvatar}
+            />
           </button>
         )}
       </div>

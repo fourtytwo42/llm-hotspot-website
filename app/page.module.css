@@ -17,9 +17,16 @@
 }
 
 .logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
   font-size: 1.1rem;
   font-weight: 700;
   letter-spacing: 0.02em;
+}
+
+.logoImage {
+  border-radius: 8px;
 }
 
 .nav {
@@ -367,10 +374,8 @@
   width: 40px;
   height: 40px;
   border-radius: 999px;
-  display: grid;
-  place-items: center;
+  object-fit: cover;
   background: #ffffff;
-  font-size: 1.2rem;
 }
 
 .chatWidgetClose {

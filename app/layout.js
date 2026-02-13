@@ -15,6 +15,10 @@ export const metadata = {
   title: "LLM Hotspot",
   description:
     "LLM Hotspot gives you a desktop OpenAI-compatible endpoint with optional Pro unlock for unlimited account connections and Cloudflare Tunnel support.",
+  icons: {
+    icon: "/logo.png",
+    apple: "/logo.png",
+  },
 };
 
 export default function RootLayout({ children }) {
