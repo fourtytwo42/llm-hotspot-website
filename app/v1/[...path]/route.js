@@ -74,7 +74,8 @@ async function proxyRequest(request, { params }) {
     );
   }
 
-  const pathParts = params.path || [];
+  const resolvedParams = await Promise.resolve(params);
+  const pathParts = resolvedParams?.path || [];
   const proxyPath = pathParts.join("/");
   const relayUrl = new URL(
     `${getRelayHttpBase().replace(/\/+$/, "")}/v1/${proxyPath.replace(/^\/+/, "")}`,
@@ -84,6 +85,7 @@ async function proxyRequest(request, { params }) {
   const method = request.method;
   const hasBody = method !== "GET" && method !== "HEAD";
   const headers = copyRequestHeaders(request);
+  headers.set("x-forwarded-host", host);
   headers.set("x-tenant-slug", slug);
   headers.set("x-relay-connector-id", connector.connector.connectorId);
   headers.set("x-llmhotspot-proxy-mode", "relay");
