@@ -76,6 +76,7 @@ ADMIN_API_KEY=...
 - `GET /api/order-status/:orderRef`
 - `POST /api/license/activate`
 - `POST /api/license/status`
+- `GET /api/endpoints/health`
 - `POST /api/endpoints/register`
 - `POST /api/endpoints/details`
 - `POST /api/endpoints/upstream`

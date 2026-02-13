@@ -41,7 +41,10 @@ This avoids per-customer Cloudflare tunnels and scales by host-based multi-tenan
 4. `POST /api/endpoints/token/rotate`
    - Body: `{ "licenseKey": "...", "deviceId": "..." }`
    - Rotates endpoint token and returns a new one-time token.
-5. `/v1/*` proxy route
+5. `GET /api/endpoints/health`
+   - Call using tenant host, e.g. `https://acme.xclaw.trade/api/endpoints/health`.
+   - Verifies host-to-tenant resolution and whether upstream is configured.
+6. `/v1/*` proxy route
    - Resolves tenant from host subdomain.
    - Auth: `Authorization: Bearer <endpointToken>` or `x-endpoint-token`.
    - Forwards to tenant's `upstreamBaseUrl/v1/*`.
