@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { getEndpointsBaseDomain } from "@/lib/config";
 import { requireEndpointManagerAccess } from "@/lib/endpoint-manager-auth";
-import { findTenantEndpointByLicenseKey } from "@/lib/store";
+import { findTenantEndpointByLicenseKey, getConnectorStatusBySlug } from "@/lib/store";
 
 function endpointUrlForSlug(slug) {
   return `https://${slug}.${getEndpointsBaseDomain()}`;
@@ -27,6 +27,7 @@ export async function POST(request) {
         ...endpoint,
         publicBaseUrl: endpointUrlForSlug(endpoint.slug),
       },
+      connector: (await getConnectorStatusBySlug(endpoint.slug)).connector || null,
     });
   } catch (error) {
     return NextResponse.json(
@@ -35,4 +36,3 @@ export async function POST(request) {
     );
   }
 }
-

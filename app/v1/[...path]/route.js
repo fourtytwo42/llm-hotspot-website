@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
 
-import {
-  findTenantEndpointBySlug,
-  verifyTenantEndpointToken,
-} from "@/lib/store";
+import { getRelayHttpBase } from "@/lib/config";
 import { checkRateLimit, getProxyRateLimitConfig } from "@/lib/rate-limit";
+import { findTenantEndpointBySlug, getOnlineConnectorBySlug } from "@/lib/store";
 import { resolveTenantSlugFromHost } from "@/lib/tenant-routing";
 
 export const runtime = "nodejs";
@@ -15,14 +13,6 @@ function getHostHeader(request) {
     request.headers.get("host") ||
     ""
   );
-}
-
-function getEndpointToken(request) {
-  const authHeader = request.headers.get("authorization") || "";
-  if (authHeader.startsWith("Bearer ")) {
-    return authHeader.slice("Bearer ".length).trim();
-  }
-  return request.headers.get("x-endpoint-token") || "";
 }
 
 function getClientIp(request) {
@@ -59,21 +49,6 @@ async function proxyRequest(request, { params }) {
     );
   }
 
-  if (!endpoint.upstreamBaseUrl) {
-    return NextResponse.json(
-      { ok: false, error: "tenant_upstream_not_configured" },
-      { status: 400 },
-    );
-  }
-
-  const endpointToken = getEndpointToken(request);
-  if (!verifyTenantEndpointToken(endpoint, endpointToken)) {
-    return NextResponse.json(
-      { ok: false, error: "invalid_endpoint_token" },
-      { status: 401 },
-    );
-  }
-
   const limiter = getProxyRateLimitConfig();
   const rateKey = `${endpoint.slug}:${getClientIp(request)}`;
   const rate = checkRateLimit(rateKey, limiter);
@@ -91,16 +66,31 @@ async function proxyRequest(request, { params }) {
     );
   }
 
+  const connector = await getOnlineConnectorBySlug(slug);
+  if (!connector.ok) {
+    return NextResponse.json(
+      { ok: false, error: "tenant_offline", reason: connector.reason },
+      { status: 503 },
+    );
+  }
+
   const pathParts = params.path || [];
-  const upstreamPath = pathParts.join("/");
-  const upstreamUrl = new URL(`${endpoint.upstreamBaseUrl}/v1/${upstreamPath}`);
-  upstreamUrl.search = new URL(request.url).search;
+  const proxyPath = pathParts.join("/");
+  const relayUrl = new URL(
+    `${getRelayHttpBase().replace(/\/+$/, "")}/v1/${proxyPath.replace(/^\/+/, "")}`,
+  );
+  relayUrl.search = new URL(request.url).search;
 
   const method = request.method;
   const hasBody = method !== "GET" && method !== "HEAD";
-  const upstreamResponse = await fetch(upstreamUrl, {
+  const headers = copyRequestHeaders(request);
+  headers.set("x-tenant-slug", slug);
+  headers.set("x-relay-connector-id", connector.connector.connectorId);
+  headers.set("x-llmhotspot-proxy-mode", "relay");
+
+  const upstreamResponse = await fetch(relayUrl, {
     method,
-    headers: copyRequestHeaders(request),
+    headers,
     body: hasBody ? request.body : undefined,
     duplex: hasBody ? "half" : undefined,
   });
@@ -110,6 +100,8 @@ async function proxyRequest(request, { params }) {
   responseHeaders.set("x-llmhotspot-proxy", "v1");
   responseHeaders.set("x-ratelimit-limit", String(limiter.max));
   responseHeaders.set("x-ratelimit-remaining", String(rate.remaining));
+  responseHeaders.set("x-llmhotspot-relay", "managed");
+  responseHeaders.set("x-llmhotspot-connector-id", connector.connector.connectorId);
 
   return new Response(upstreamResponse.body, {
     status: upstreamResponse.status,

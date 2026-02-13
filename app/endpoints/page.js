@@ -7,7 +7,6 @@ const emptyForm = {
   licenseKey: "",
   deviceId: "",
   slug: "",
-  upstreamBaseUrl: "",
 };
 
 async function postJson(url, body) {
@@ -23,10 +22,21 @@ async function postJson(url, body) {
   return data;
 }
 
+async function getJson(url) {
+  const response = await fetch(url, { method: "GET" });
+  const data = await response.json();
+  if (!response.ok || !data.ok) {
+    throw new Error(data.error || data.reason || "Request failed");
+  }
+  return data;
+}
+
 export default function EndpointsPage() {
   const [form, setForm] = useState(emptyForm);
   const [endpoint, setEndpoint] = useState(null);
   const [latestToken, setLatestToken] = useState("");
+  const [connectorToken, setConnectorToken] = useState("");
+  const [connectorStatus, setConnectorStatus] = useState(null);
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -103,14 +113,6 @@ export default function EndpointsPage() {
               placeholder="acme"
             />
           </label>
-          <label>
-            Upstream Base URL
-            <input
-              value={form.upstreamBaseUrl}
-              onChange={(e) => setField("upstreamBaseUrl", e.target.value)}
-              placeholder="https://tenant-gateway.example.com"
-            />
-          </label>
         </div>
         <div className={styles.actions}>
           <button
@@ -120,7 +122,6 @@ export default function EndpointsPage() {
                 const data = await postJson("/api/endpoints/register", {
                   ...managerAuth,
                   slug: form.slug.trim(),
-                  upstreamBaseUrl: form.upstreamBaseUrl.trim(),
                 });
                 setEndpoint(data.endpoint);
                 setLatestToken(data.endpointToken || "");
@@ -140,7 +141,7 @@ export default function EndpointsPage() {
             URL: <code>{endpoint.publicBaseUrl}</code>
           </p>
           <p>
-            Upstream: <code>{endpoint.upstreamBaseUrl || "not set"}</code>
+            Relay status: <code>{endpoint.relayStatus || "offline"}</code>
           </p>
 
           <div className={styles.actions}>
@@ -148,20 +149,16 @@ export default function EndpointsPage() {
               disabled={busy}
               onClick={() =>
                 run(async () => {
-                  const data = await postJson("/api/endpoints/upstream", {
+                  const data = await postJson("/api/connectors/issue", {
                     ...managerAuth,
-                    upstreamBaseUrl: form.upstreamBaseUrl.trim(),
+                    endpointSlug: endpoint.slug,
                   });
-                  setEndpoint((prev) => ({
-                    ...prev,
-                    ...data.endpoint,
-                    publicBaseUrl: prev.publicBaseUrl,
-                  }));
-                  setStatus("Upstream updated");
+                  setConnectorToken(data.connectorToken || "");
+                  setStatus("Connector session issued");
                 })
               }
             >
-              Update Upstream
+              Issue Connector Session
             </button>
             <button
               disabled={busy}
@@ -176,12 +173,38 @@ export default function EndpointsPage() {
             >
               Rotate Token
             </button>
+            <button
+              disabled={busy}
+              onClick={() =>
+                run(async () => {
+                  const data = await getJson(`/api/connectors/status?slug=${endpoint.slug}`);
+                  setConnectorStatus(data.connector);
+                  setStatus("Connector status loaded");
+                })
+              }
+            >
+              Refresh Connector Status
+            </button>
           </div>
 
           {latestToken ? (
             <div className={styles.tokenBox}>
               <p>New token (save now):</p>
               <code>{latestToken}</code>
+            </div>
+          ) : null}
+
+          {connectorToken ? (
+            <div className={styles.tokenBox}>
+              <p>Connector token (desktop daemon uses this to connect relay):</p>
+              <code>{connectorToken}</code>
+            </div>
+          ) : null}
+
+          {connectorStatus ? (
+            <div className={styles.tokenBox}>
+              <p>Connector status</p>
+              <code>{JSON.stringify(connectorStatus)}</code>
             </div>
           ) : null}
         </section>
@@ -191,4 +214,3 @@ export default function EndpointsPage() {
     </main>
   );
 }
-

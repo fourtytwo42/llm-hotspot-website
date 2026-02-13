@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getEndpointsBaseDomain } from "@/lib/config";
-import { findTenantEndpointBySlug } from "@/lib/store";
+import { getConnectorStatusBySlug } from "@/lib/store";
 import { resolveTenantSlugFromHost } from "@/lib/tenant-routing";
 
 function getHostHeader(request) {
@@ -26,8 +26,8 @@ export async function GET(request) {
       });
     }
 
-    const endpoint = await findTenantEndpointBySlug(slug);
-    if (!endpoint) {
+    const status = await getConnectorStatusBySlug(slug);
+    if (!status.ok) {
       return NextResponse.json({
         ok: false,
         baseDomain: getEndpointsBaseDomain(),
@@ -37,20 +37,28 @@ export async function GET(request) {
       });
     }
 
+    const endpoint = status.endpoint;
+    const connector = status.connector;
+    const online = Boolean(
+      connector &&
+        connector.status === "online" &&
+        connector.lastSeenAt &&
+        Date.now() - new Date(connector.lastSeenAt).getTime() < 90_000,
+    );
+
     return NextResponse.json({
-      ok: endpoint.status === "active" && Boolean(endpoint.upstreamBaseUrl),
+      ok: endpoint.status === "active" && online,
       baseDomain: getEndpointsBaseDomain(),
       host,
       slug: endpoint.slug,
       status: endpoint.status,
-      upstreamConfigured: Boolean(endpoint.upstreamBaseUrl),
-      upstreamBaseUrl: endpoint.upstreamBaseUrl,
+      connector,
       message:
         endpoint.status !== "active"
           ? "endpoint_inactive"
-          : endpoint.upstreamBaseUrl
+          : online
             ? "endpoint_ready"
-            : "upstream_not_configured",
+            : "connector_offline",
     });
   } catch (error) {
     return NextResponse.json(
@@ -59,4 +67,3 @@ export async function GET(request) {
     );
   }
 }
-

@@ -13,8 +13,9 @@ Example tenant endpoint:
 1. DNS and tunnel stay centralized on your account.
 2. Each customer gets a unique subdomain slug (`acme`, `team42`, etc).
 3. Incoming request host determines tenant (`acme.llmhotspot.com` -> `acme`).
-4. App validates tenant and tenant endpoint token.
-5. App proxies request to that tenant's configured upstream (`upstreamBaseUrl`).
+4. App resolves the tenant and active connector session.
+5. App forwards `/v1/*` traffic to the managed relay service.
+6. Relay forwards to the tenant's live desktop connector.
 
 This avoids per-customer Cloudflare tunnels and scales by host-based multi-tenancy.
 
@@ -32,22 +33,28 @@ This avoids per-customer Cloudflare tunnels and scales by host-based multi-tenan
    - Body: `{ "licenseKey": "...", "deviceId": "...", "slug": "acme", "upstreamBaseUrl": "https://..." }`
    - Creates endpoint for a Pro/active license.
    - Returns one-time `endpointToken` and public URL.
-2. `POST /api/endpoints/upstream`
-   - Body: `{ "licenseKey": "...", "deviceId": "...", "upstreamBaseUrl": "https://..." }`
-   - Updates tenant upstream target.
-3. `POST /api/endpoints/details`
+2. `POST /api/connectors/issue`
+   - Body: `{ "licenseKey": "...", "deviceId": "...", "endpointSlug": "acme" }`
+   - Issues connector credentials for desktop daemon outbound `wss` connection.
+3. `POST /api/connectors/heartbeat`
+   - Relay uses this to mark connector online/offline and capacity.
+4. `GET /api/connectors/status?slug=acme`
+   - Returns connector online state for tenant.
+5. `POST /api/connectors/verify`
+   - Relay-internal connector token verification endpoint.
+6. `POST /api/endpoints/details`
    - Body: `{ "licenseKey": "...", "deviceId": "..." }`
-   - Returns current endpoint config for a license.
-4. `POST /api/endpoints/token/rotate`
+   - Returns current endpoint + relay status for a license.
+7. `POST /api/endpoints/token/rotate`
    - Body: `{ "licenseKey": "...", "deviceId": "..." }`
    - Rotates endpoint token and returns a new one-time token.
-5. `GET /api/endpoints/health`
+8. `GET /api/endpoints/health`
    - Call using tenant host, e.g. `https://acme.xclaw.trade/api/endpoints/health`.
-   - Verifies host-to-tenant resolution and whether upstream is configured.
-6. `/v1/*` proxy route
+   - Verifies host-to-tenant resolution and connector status.
+9. `/v1/*` proxy route
    - Resolves tenant from host subdomain.
-   - Auth: `Authorization: Bearer <endpointToken>` or `x-endpoint-token`.
-   - Forwards to tenant's `upstreamBaseUrl/v1/*`.
+   - Public client `Authorization: Bearer <hotspot_access_key>` passes through.
+   - Forwards to managed relay (`RELAY_HTTP_BASE`) for connector dispatch.
    - Includes per-tenant per-IP rate limiting.
 
 ## Environment variable
@@ -57,10 +64,15 @@ Add:
 - `ENDPOINTS_BASE_DOMAIN=llmhotspot.com`
 - `PROXY_RATE_LIMIT_WINDOW_MS=60000`
 - `PROXY_RATE_LIMIT_MAX=120`
+- `RELAY_HTTP_BASE=http://localhost:8789`
+- `RELAY_WS_URL=ws://localhost:8789/ws/connect`
+- `RELAY_CONNECTOR_SIGNING_SECRET=...`
+- `RELAY_CONNECTOR_TTL_SECONDS=604800`
+- `RELAY_INTERNAL_SECRET=...`
 
 ## Notes
 
 - Current storage is `data/store.json` (prototype only). Move to Postgres before production scale.
 - Add rate limiting and abuse controls before opening publicly.
 - Add per-tenant usage metering and logs.
-- If you later want customer-owned local daemons, add a persistent outbound connector from daemon -> your relay service. Do not require users to run Cloudflare tunnels in your account.
+- Managed relay service lives in `relay/` and is the public data plane.

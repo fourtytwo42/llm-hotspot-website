@@ -32,6 +32,11 @@ APP_BASE_URL=http://localhost:3000
 ENDPOINTS_BASE_DOMAIN=llmhotspot.com
 PROXY_RATE_LIMIT_WINDOW_MS=60000
 PROXY_RATE_LIMIT_MAX=120
+RELAY_HTTP_BASE=http://localhost:8789
+RELAY_WS_URL=ws://localhost:8789/ws/connect
+RELAY_CONNECTOR_SIGNING_SECRET=...
+RELAY_CONNECTOR_TTL_SECONDS=604800
+RELAY_INTERNAL_SECRET=...
 PAYMENT_DEV_MODE=true
 
 # PayPal
@@ -81,9 +86,13 @@ ADMIN_API_KEY=...
 - `POST /api/endpoints/details`
 - `POST /api/endpoints/upstream`
 - `POST /api/endpoints/token/rotate`
+- `POST /api/connectors/issue`
+- `POST /api/connectors/heartbeat`
+- `POST /api/connectors/verify`
+- `GET /api/connectors/status?slug=<slug>`
 - `POST /api/jobs/license-reminders` (requires `CRON_SECRET`)
 - `GET /api/admin/debug/licenses` (requires `ADMIN_API_KEY` or fallback `CRON_SECRET`)
-- `https://<tenant-subdomain>.<ENDPOINTS_BASE_DOMAIN>/v1/*` (host-based multi-tenant proxy)
+- `https://<tenant-subdomain>.<ENDPOINTS_BASE_DOMAIN>/v1/*` (host-based multi-tenant gateway -> managed relay)
 
 ### Activation payload
 
@@ -111,6 +120,19 @@ Set repository secrets:
 - `CRON_SECRET`
 
 The workflow triggers `POST /api/jobs/license-reminders` daily.
+
+## Relay service (managed data plane)
+
+A relay skeleton is included in `relay/`.
+
+Install and run:
+
+```bash
+npm --prefix relay install
+npm run relay:start
+```
+
+The Next app issues connector tokens (`/api/connectors/issue`) and receives relay heartbeats (`/api/connectors/heartbeat`).
 
 ## Admin debug endpoint
 
