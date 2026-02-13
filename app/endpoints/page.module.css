@@ -1,0 +1,82 @@
+.page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 32px 16px 64px;
+  display: grid;
+  gap: 16px;
+}
+
+.card {
+  border: 1px solid #d8dbe5;
+  border-radius: 12px;
+  padding: 16px;
+  background: #ffffff;
+}
+
+.card h1,
+.card h2 {
+  margin: 0 0 8px;
+}
+
+.card p {
+  margin: 0 0 12px;
+}
+
+.grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.grid label {
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.grid input {
+  border: 1px solid #c8ccda;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.actions button {
+  border: 1px solid #111;
+  background: #111;
+  color: #fff;
+  border-radius: 8px;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+.actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.tokenBox {
+  border: 1px dashed #9aa3ba;
+  border-radius: 10px;
+  padding: 12px;
+  margin-top: 12px;
+  background: #f6f8fc;
+}
+
+.tokenBox code,
+.card code {
+  word-break: break-all;
+}
+
+.status {
+  margin: 0;
+  font-size: 14px;
+}
+

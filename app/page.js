@@ -156,6 +156,7 @@ export default function Home() {
           <a href="#pricing">Pricing</a>
           <a href="#features">Features</a>
           <a href="#how-it-works">How It Works</a>
+          <Link href="/endpoints">Endpoints</Link>
           <Link href="/download">Download</Link>
         </nav>
       </header>

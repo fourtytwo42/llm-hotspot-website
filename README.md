@@ -29,6 +29,9 @@ Create `.env.local`:
 
 ```bash
 APP_BASE_URL=http://localhost:3000
+ENDPOINTS_BASE_DOMAIN=llmhotspot.com
+PROXY_RATE_LIMIT_WINDOW_MS=60000
+PROXY_RATE_LIMIT_MAX=120
 PAYMENT_DEV_MODE=true
 
 # PayPal
@@ -62,6 +65,7 @@ ADMIN_API_KEY=...
 ### Customer routes
 - `/` landing page + checkout CTA
 - `/download` app download information
+- `/endpoints` self-serve endpoint manager (license key + device ID)
 - `/success?provider=<paypal|coinbase>&ref=<orderRef>` post-checkout key delivery view
 
 ### API routes
@@ -72,8 +76,13 @@ ADMIN_API_KEY=...
 - `GET /api/order-status/:orderRef`
 - `POST /api/license/activate`
 - `POST /api/license/status`
+- `POST /api/endpoints/register`
+- `POST /api/endpoints/details`
+- `POST /api/endpoints/upstream`
+- `POST /api/endpoints/token/rotate`
 - `POST /api/jobs/license-reminders` (requires `CRON_SECRET`)
 - `GET /api/admin/debug/licenses` (requires `ADMIN_API_KEY` or fallback `CRON_SECRET`)
+- `https://<tenant-subdomain>.<ENDPOINTS_BASE_DOMAIN>/v1/*` (host-based multi-tenant proxy)
 
 ### Activation payload
 
@@ -116,3 +125,4 @@ curl -sS \"${APP_BASE_URL}/api/admin/debug/licenses?limit=50&includeOrders=true\
 - Keep webhook and cron endpoints behind HTTPS.
 - For strict recurring crypto billing, integrate a provider that supports native subscription billing for crypto.
 - Use is subject to OpenAI and app provider terms.
+- Multi-tenant endpoint routing runbook: `docs/multi-tenant-endpoints.md`
