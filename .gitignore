@@ -44,3 +44,4 @@ next-env.d.ts
 data/store.json
 
 !.env.example
+relay/node_modules/
