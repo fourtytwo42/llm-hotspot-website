@@ -112,6 +112,17 @@ ADMIN_API_KEY=...
 }
 ```
 
+### Desktop integration (`llmhotspot-v2`)
+
+Desktop runtime can fetch remote endpoint assignment directly from:
+
+- `POST /api/endpoints/details` with `{ "licenseKey": "...", "deviceId": "..." }`
+
+When `endpoint` is present, runtime should use:
+
+- `remote_endpoint_url = endpoint.publicBaseUrl`
+- `remote_console_url = endpoint.publicBaseUrl + "/endpoints"`
+
 ## Reminder workflow
 
 A GitHub Actions workflow is included at `.github/workflows/license-reminders.yml`.

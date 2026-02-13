@@ -57,6 +57,18 @@ This avoids per-customer Cloudflare tunnels and scales by host-based multi-tenan
    - Forwards to managed relay (`RELAY_HTTP_BASE`) for connector dispatch.
    - Includes per-tenant per-IP rate limiting.
 
+## Desktop runtime integration
+
+`llmhotspot-v2` can use this website as assignment source without extra backend routes:
+
+1. Call `POST /api/endpoints/details` with:
+   - `{ "licenseKey": "...", "deviceId": "..." }`
+2. If response contains `endpoint.publicBaseUrl`, derive:
+   - `remote_base_url = endpoint.publicBaseUrl`
+   - `remote_console_url = endpoint.publicBaseUrl + "/endpoints"`
+
+This keeps remote endpoint and remote console on the same tenant origin.
+
 ## Environment variable
 
 Add:
